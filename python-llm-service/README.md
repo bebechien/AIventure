@@ -30,9 +30,27 @@ This is a simple FastAPI-based LLM provider that uses the Hugging Face `transfor
 
 You can change the model by setting the `MODEL_ID` environment variable:
 ```bash
-set MODEL_ID=google/gemma-2-2b-it
+set MODEL_ID=google/gemma-4-E4B-it
 python main.py
 ```
+
+## Vertex AI Support
+
+To use a Vertex AI endpoint instead of a local model, set the following environment variables:
+
+- `GOOGLE_CLOUD_PROJECT`: Your Google Cloud Project ID.
+- `GOOGLE_CLOUD_LOCATION`: The region of your Vertex AI endpoint (e.g., `us-central1`).
+- `GOOGLE_CLOUD_ENDPOINT_ID`: The ID of your Vertex AI endpoint.
+
+Example:
+```bash
+set GOOGLE_CLOUD_PROJECT=<YOUR_PROJECT_ID>
+set GOOGLE_CLOUD_LOCATION=<YOUR_ENDPOINT_LOCATION>
+set GOOGLE_CLOUD_ENDPOINT_ID=<YOUR_ENDPOINT_ID>
+python main.py
+```
+
+When these variables are set, the service will route requests to Vertex AI and bypass loading the local model.
 
 ## Integration with AIventure
 
