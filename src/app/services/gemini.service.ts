@@ -1,5 +1,3 @@
-// [START solution_code]
-
 import { Injectable, OnDestroy } from '@angular/core';
 import { GoogleGenAI } from '@google/genai';
 import { EventBus } from '../../game/core/EventBus';
@@ -20,6 +18,8 @@ interface Content {
   role: 'user' | 'model' | 'tool';
   parts: Part[];
 }
+
+// [START solution_code]
 
 @Injectable({
   providedIn: 'root'
