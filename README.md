@@ -75,3 +75,28 @@ Run `ng build` to build the project. The build artifacts will be stored in the `
 ```bash
 npm run build
 ```
+
+### Sprite pack license / credits
+
+Several sprites for this project were licensed from the Oryx Design Lab's Wee Fantasy sprite pack: https://www.oryxdesignlab.com/products/p/wee-fantasy 
+
+The following sprites are from Oryx Design Lab without modifications:
+- public/asssets/gamedata/8b7184c09a3cb22e00aa0bcd7ec8d4f3
+- public/asssets/gamedata/11d3f592d3ff0991b0e4d3db7a8adebe
+- public/asssets/gamedata/b0873eff9ce99b80e42e5a20c402e089
+- public/asssets/gamedata/a951de827675a34a0009b6e49022a51c
+- public/asssets/gamedata/187559f92ec289ff41b415a3e1ef400a
+- public/asssets/gamedata/d7d88f56f462752fb26411f92b04b3f0
+- public/asssets/gamedata/d80ea02d00d191411567c3016f946145
+- public/asssets/gamedata/f275e398f417046bf856d20c5715172d
+- public/asssets/gamedata/f5f6093ff99e272b1164c3b1e31e3563
+
+The following sprites are modified / based on Oryx Design Lab sprites, their modifications are the property of Google LLC:
+- public/favicon.png
+- public/assets/player-1.png
+- public/assets/player-2.png
+
+All other sprites are the property of Google LLC.
+
+Full license details of the sprite pack: https://www.oryxdesignlab.com/license
+
