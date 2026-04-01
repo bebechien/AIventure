@@ -11,6 +11,9 @@
 npm-debug.log
 yarn-error.log
 
+# Python
+**/__pycache__
+
 # IDEs and editors
 .idea/
 .project
