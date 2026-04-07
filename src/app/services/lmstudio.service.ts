@@ -11,7 +11,7 @@ import { LogService } from './log.service';
 export class LmStudioService implements ModelBackend, OnDestroy {
   private history: any[] = [];
   private apiUrl = 'http://localhost:1234/v1/chat/completions';
-  private model = 'google/gemma-3-4b'; // LM Studio usually accepts any string here if one model is loaded
+  private model = 'google/gemma-4-e4b-it'; // LM Studio usually accepts any string here if one model is loaded
   private lastTool: string = "[]";
   private waitingToolCallCount = 0;
 
