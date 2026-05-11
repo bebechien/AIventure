@@ -138,6 +138,8 @@ export class InteractionSystem
             a.getState() === AgentState.THINKING || a.getState() === AgentState.EXECUTE
         );
 
+        console.log('Active agent found:', activeAgent?.props.name);
+
         if (activeAgent)
         {
             activeAgent.incrementToolUse();
@@ -148,6 +150,7 @@ export class InteractionSystem
             }
         }
 
+        console.log('Calling triggerSystem.processEvent with payload:', call);
         this.triggerSystem.processEvent({
             type: TriggerType.MODEL_FUNCTION,
             payload: call,

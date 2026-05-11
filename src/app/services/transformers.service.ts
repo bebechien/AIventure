@@ -139,14 +139,15 @@ export class TransformersService implements ModelBackend, OnDestroy {
       signal();
     };
 
+    let fullResponse = "";
+
     const streamer = new TextStreamer(this.tokenizer, {
       skip_prompt: true,
       callback_function: (text: string) => {
         pushToQueue(text);
+        fullResponse += text;
       }
     });
-
-    let fullResponse = "";
 
     this.generator(messages, {
       max_new_tokens: 512,
@@ -155,19 +156,24 @@ export class TransformersService implements ModelBackend, OnDestroy {
       return_full_text: false
     }).then((output: any) => {
       isDone = true;
-      if (Array.isArray(output) && output.length > 0) {
-          fullResponse = output[0].generated_text;
-          if (typeof fullResponse === 'object') {
-             fullResponse = (fullResponse as any).content || "";
+      // If fullResponse is still empty, try to fallback to output
+      if (!fullResponse && Array.isArray(output) && output.length > 0) {
+          let genText = output[0].generated_text;
+          if (typeof genText === 'object') {
+             genText = (genText as any).content || "";
           }
+          fullResponse = genText;
       }
       
       // Check for Gemma 4 tool calls
-      const toolCallRegex = /<\|tool_call>call:(\w+)\{(.*?)\}<tool_call|>/g;
+      // Support both tag-wrapped and raw formats
+      console.log('TransformersService fullResponse:', fullResponse);
+      const toolCallRegex = /(?:<\|tool_call>)?call:(\w+)\{(.*?)\}(?:<tool_call|>)?/g;
       let match;
       let foundToolCall = false;
 
       while ((match = toolCallRegex.exec(fullResponse)) !== null) {
+        console.log('Found tool call match:', match[0]);
         foundToolCall = true;
         const name = match[1];
         const argsStr = match[2];

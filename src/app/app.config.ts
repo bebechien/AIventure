@@ -24,7 +24,6 @@ import { GeminiService } from './services/gemini.service';
 import { OllamaService } from './services/ollama.service';
 import { LmStudioService } from './services/lmstudio.service';
 import { TransformersService } from './services/transformers.service';
-import { OnyxGemmaService } from './services/onyx-gemma.service';
 import { ChromePromptService } from './services/chrome-prompt.service';
 
 export const appConfig: ApplicationConfig = {

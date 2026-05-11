@@ -50,7 +50,9 @@ function getGridBounds(props: any) {
 }
 
 function removeMapObjectByTag(levelManager: ILevelManager, tag: string, shouldClearGrid: (gx: number, gy: number) => boolean = () => true) {
+    console.log('removeMapObjectByTag called with tag:', tag);
     const objectsToRemove = levelManager.getObjectsByTag(tag);
+    console.log('Found objects to remove:', objectsToRemove.length);
 
     objectsToRemove.forEach(obj => {
         const props = (obj as any).props;
@@ -66,6 +68,7 @@ function removeMapObjectByTag(levelManager: ILevelManager, tag: string, shouldCl
                 }
             }
 
+            console.log('Destroying object:', obj);
             obj.destroy();
         }
     });
@@ -76,6 +79,7 @@ function removeMapObjectByTag(levelManager: ILevelManager, tag: string, shouldCl
 // --- Action Implementations ---
 
 const openDoorHandler: ActionHandler = (levelManager, params, context) => {
+    console.log('openDoorHandler called with params:', params, 'and context:', context);
     let color = params?.color;
     if (params?.usePayload && context.payload) {
         if (context.payload.linkURL) {
@@ -88,8 +92,10 @@ const openDoorHandler: ActionHandler = (levelManager, params, context) => {
         if (parts.length > 1) color = parts[1];
     }
 
+    console.log('Extracted color:', color);
     if (color) {
         const targetClass = `${color.charAt(0).toUpperCase()}${color.slice(1).toLowerCase()}Door`;
+        console.log('Calling removeMapObjectByTag with targetClass:', targetClass);
         removeMapObjectByTag(levelManager, targetClass);
         return `Door ${color} opened.`;
     }

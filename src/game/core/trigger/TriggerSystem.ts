@@ -34,16 +34,24 @@ export class TriggerSystem {
     }
 
     public processEvent(context: TriggerContext) {
+        console.log('TriggerSystem.processEvent called with context:', context);
         let interactionResult = null;
+        let matched = false;
         for (const rule of this.rules) {
             if (rule.trigger(context)) {
                 console.log(`Rule matched: ${rule.id}`);
+                matched = true;
                 const actionResult = this.executeActions(rule.actions, context);
                 if (actionResult) interactionResult = actionResult;
             }
         }
+        
+        if (!matched) {
+            console.log('No rules matched for this context.');
+        }
 
         if (context.type === TriggerType.MODEL_FUNCTION && context.payload?.name) {
+            console.log('Emitting model-tool-execution-result with output:', interactionResult || "Action executed.");
             EventBus.emit('model-tool-execution-result', {
                 name: context.payload.name,
                 output: interactionResult || "Action executed."
