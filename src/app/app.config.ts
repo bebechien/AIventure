@@ -24,6 +24,8 @@ import { GeminiService } from './services/gemini.service';
 import { OllamaService } from './services/ollama.service';
 import { LmStudioService } from './services/lmstudio.service';
 import { TransformersService } from './services/transformers.service';
+import { OnyxGemmaService } from './services/onyx-gemma.service';
+import { ChromePromptService } from './services/chrome-prompt.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -32,7 +34,9 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     // { provide: MODEL_BACKEND, useClass: GeminiService }, // Default, no need to specify if providedIn: 'root' works, but good to have explicit
     // { provide: MODEL_BACKEND, useClass: OllamaService }, // Uncomment to use Ollama
-    { provide: MODEL_BACKEND, useClass: LmStudioService }, // Uncomment to use LM Studio
-    // { provide: MODEL_BACKEND, useClass: TransformersService } // Uncomment to use transformers.js
+    // { provide: MODEL_BACKEND, useClass: LmStudioService }, // Uncomment to use LM Studio
+    { provide: MODEL_BACKEND, useClass: TransformersService }, // Uncomment to use transformers.js
+    // { provide: MODEL_BACKEND, useClass: OnyxGemmaService }, // Uncomment to use Onyx Gemma
+    // { provide: MODEL_BACKEND, useClass: ChromePromptService } // Uncomment to use Chrome Prompt API
   ]
 };

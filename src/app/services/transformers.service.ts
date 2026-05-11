@@ -18,6 +18,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { ModelBackend } from './model-backend.interface';
 import { pipeline, TextStreamer } from '@huggingface/transformers';
 import { BehaviorSubject } from 'rxjs';
+import { EventBus } from '../../game/core/EventBus';
 
 @Injectable({
   providedIn: 'root'
@@ -26,8 +27,8 @@ export class TransformersService implements ModelBackend, OnDestroy {
   private generator: any;
   private tokenizer: any;
   private history: any[] = [];
-  private modelName = 'onnx-community/gemma-3-270m-it-ONNX';
-  //private modelName = 'onnx-community/gemma-3-1b-it-ONNX-GQA';
+  private modelName = 'onnx-community/gemma-4-E4B-it-ONNX';
+
   private initializationPromise: Promise<void> | null = null;
 
   public loadingProgress$ = new BehaviorSubject<number>(0);
@@ -35,14 +36,21 @@ export class TransformersService implements ModelBackend, OnDestroy {
   public isReady$ = new BehaviorSubject<boolean>(false);
 
   constructor() {
+    EventBus.on('model-tool-execution-result', this.handleToolResult, this);
   }
 
   ngOnDestroy() {
+    EventBus.off('model-tool-execution-result', this.handleToolResult, this);
     this.history = [];
   }
 
   public reset() {
     this.history = [];
+  }
+
+  async handleToolResult(result: any) {
+    console.log("TransformersService handleToolResult:", result);
+    this.history.push({ role: 'tool', content: JSON.stringify(result.output) });
   }
 
   public async init() {
@@ -89,18 +97,37 @@ export class TransformersService implements ModelBackend, OnDestroy {
   async *generateTextStream(tool_list: string, context: string, prompt: string): AsyncGenerator<string> {
     await this.ensureInitialized();
 
-    // Construct messages for chat template
     const messages = [];
+    
+    let systemPrompt = "";
     if (context) {
-        messages.push({ role: 'system', content: `Context: ${context}` });
+      systemPrompt = `Context: ${context}`;
     }
+    
+    if (tool_list) {
+      try {
+        const tools = JSON.parse(tool_list);
+        if (tools.length > 0) {
+          systemPrompt += "\n\n";
+          for (const tool of tools) {
+            const declaration = this.formatGemma4Declaration(tool);
+            systemPrompt += declaration;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse tools in TransformersService:", e);
+      }
+    }
+
+    if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt });
+    }
+
     messages.push(...this.history);
     messages.push({ role: 'user', content: prompt });
 
-    // Update history immediately with user prompt
     this.history.push({ role: 'user', content: prompt });
 
-    // Queue for streaming
     const queue: string[] = [];
     let signal: () => void;
     let promise = new Promise<void>(r => signal = r);
@@ -110,7 +137,6 @@ export class TransformersService implements ModelBackend, OnDestroy {
     const pushToQueue = (text: string) => {
       queue.push(text);
       signal();
-      // Do not reset promise here; we reset it after consuming
     };
 
     const streamer = new TextStreamer(this.tokenizer, {
@@ -120,7 +146,6 @@ export class TransformersService implements ModelBackend, OnDestroy {
       }
     });
 
-    // Start generation
     let fullResponse = "";
 
     this.generator(messages, {
@@ -130,18 +155,45 @@ export class TransformersService implements ModelBackend, OnDestroy {
       return_full_text: false
     }).then((output: any) => {
       isDone = true;
-      // Extract full text from output if available, for history
       if (Array.isArray(output) && output.length > 0) {
           fullResponse = output[0].generated_text;
-          // Sometimes generated_text includes the prompt if return_full_text is true,
-          // but we set it to false. However, for chat templates, behavior varies.
-          // Usually output[0].generated_text is the full conversation or just the new part.
-          // With return_full_text: false, it should be just the new part.
           if (typeof fullResponse === 'object') {
-             // Sometimes it returns message object
              fullResponse = (fullResponse as any).content || "";
           }
       }
+      
+      // Check for Gemma 4 tool calls
+      const toolCallRegex = /<\|tool_call>call:(\w+)\{(.*?)\}<tool_call|>/g;
+      let match;
+      let foundToolCall = false;
+
+      while ((match = toolCallRegex.exec(fullResponse)) !== null) {
+        foundToolCall = true;
+        const name = match[1];
+        const argsStr = match[2];
+        
+        const argumentsObj: any = {};
+        const argRegex = /(\w+):(?:<\|"\|>(.*?)<\|"\|>|([^,}]*))/g;
+        let argMatch;
+        while ((argMatch = argRegex.exec(argsStr)) !== null) {
+          const k = argMatch[1];
+          const v1 = argMatch[2];
+          const v2 = argMatch[3];
+          
+          let val: any = v1 || v2;
+          if (val !== undefined) {
+            val = val.trim();
+            if (val === 'true') val = true;
+            else if (val === 'false') val = false;
+            else if (!isNaN(val) && val !== '') val = Number(val);
+            argumentsObj[k] = val;
+          }
+        }
+
+        EventBus.emit('model-function-call', { name, args: argumentsObj });
+        pushToQueue(`\nFunction call: ${name}`);
+      }
+
       this.history.push({ role: 'assistant', content: fullResponse });
       signal();
     }).catch((err: any) => {
@@ -162,6 +214,50 @@ export class TransformersService implements ModelBackend, OnDestroy {
         promise = new Promise<void>(r => signal = r);
       }
     }
+  }
+
+  private formatGemma4Declaration(tool: any): string {
+    const name = tool.name;
+    const desc = tool.description;
+    const params = tool.parameters;
+
+    let result = `<|tool>declaration:${name}{`;
+    if (desc) {
+      result += `description:<|"|>${desc}<|"|>,`;
+    }
+    if (params) {
+      result += `parameters:${this.formatGemma4Object(params)}`;
+    }
+    result += `}<tool|>`;
+    return result;
+  }
+
+  private formatGemma4Object(obj: any): string {
+    let result = "{";
+    const keys = Object.keys(obj);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const val = obj[key];
+      result += `${key}:`;
+      
+      if (key === 'type' && typeof val === 'string') {
+        result += `<|"|>${val.toUpperCase()}<|"|>`;
+      } else if (typeof val === 'string') {
+        result += `<|"|>${val}<|"|>`;
+      } else if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+        result += this.formatGemma4Object(val);
+      } else if (Array.isArray(val)) {
+        result += `[${val.map(v => typeof v === 'string' ? `<|"|>${v}<|"|>` : v).join(',')}]`;
+      } else {
+        result += val;
+      }
+      
+      if (i < keys.length - 1) {
+        result += ",";
+      }
+    }
+    result += "}";
+    return result;
   }
 
   async *generateHtmlStream(prompt: string, previousHtml: string = ""): AsyncGenerator<string> {
