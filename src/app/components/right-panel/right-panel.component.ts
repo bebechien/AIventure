@@ -23,6 +23,7 @@ import { MODEL_BACKEND } from '../../services/model-token';
 import { ModelBackend } from '../../services/model-backend.interface';
 import { EventBus } from '../../../game/core/EventBus';
 import { CodeExecutor } from './right-panel.worker';
+import { DevsiteAPI } from '../../services/devsite-api';
 
 type Tab = 'code' | 'iframe' | 'logs';
 
@@ -89,6 +90,16 @@ export class RightPanelComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges(); // Force update if needed
     });
 
+    EventBus.on('collectible-collected', (data: { name: string }) => {
+      if (data.name.toLowerCase() === 'diamond') {
+        const badgeData = { url: 'https://developer.google.com/badges/diamond' };
+        
+        DevsiteAPI.awardBadge('diamond', badgeData, (success) => {
+           console.log('Award badge success:', success);
+        });
+      }
+    });
+
     EventBus.on('game-focused', () => {
       if (this.codeEditor) {
         this.codeEditor.nativeElement.blur();
@@ -147,6 +158,7 @@ export class RightPanelComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
       EventBus.off('visible-code-interaction');
       EventBus.off('collectibles-tracker');
+      EventBus.off('collectible-collected');
       EventBus.off('visible-build-interaction');
       EventBus.off('build-html-request');
       EventBus.off('model-code-generated');

@@ -722,6 +722,7 @@ export class LevelManager implements ILevelManager
             }
 
             EventBus.emit('collectibles-tracker', this.collectiblesTracker);
+            EventBus.emit('collectible-collected', { name });
         }
     }
 
