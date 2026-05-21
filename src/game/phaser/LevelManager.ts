@@ -528,6 +528,16 @@ export class LevelManager implements ILevelManager
         {
             EventBus.emit('visible-build-interaction', null);
         }
+
+        // Check for DRAW interactions
+        const drawInteractions = this.getVisibleModelTools(InteractionType.DRAW);
+        if (drawInteractions.length > 0)
+        {
+            EventBus.emit('visible-draw-interaction', drawInteractions[0]);
+        } else
+        {
+            EventBus.emit('visible-draw-interaction', null);
+        }
     }
 
     public getVisibleAgent(): AgenticNPC | null

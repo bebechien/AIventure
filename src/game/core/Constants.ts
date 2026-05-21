@@ -71,6 +71,7 @@ export const InteractionType = {
     BUILD: 'build',
     COLLECTIBLE: 'collectible',
     AI_NPC: 'ai-npc',
+    DRAW: 'draw',
 } as const;
 
 export const BehaviourName = {

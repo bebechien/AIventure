@@ -43,6 +43,7 @@ export class InteractionSystem
         EventBus.on('movable-moved', this.handleMovableMoved, this);
         EventBus.on('run-code-snippet', this.handleCodeRun, this);
         EventBus.on('html-puzzle-solved', this.handleHtmlPuzzleSolved, this);
+        EventBus.on('draw-puzzle-solved', this.handleDrawPuzzleSolved, this);
     }
 
     public unregisterEvents()
@@ -53,6 +54,7 @@ export class InteractionSystem
         EventBus.off('movable-moved', this.handleMovableMoved, this);
         EventBus.off('run-code-snippet', this.handleCodeRun, this);
         EventBus.off('html-puzzle-solved', this.handleHtmlPuzzleSolved, this);
+        EventBus.off('draw-puzzle-solved', this.handleDrawPuzzleSolved, this);
     }
 
     private handleHtmlPuzzleSolved(data: { interaction: any })
@@ -60,6 +62,15 @@ export class InteractionSystem
         console.log('HTML Puzzle Solved:', data);
         this.triggerSystem.processEvent({
             type: TriggerType.HTML_PUZZLE_SOLVED,
+            payload: data.interaction
+        });
+    }
+
+    private handleDrawPuzzleSolved(data: { interaction: any })
+    {
+        console.log('Draw Puzzle Solved:', data);
+        this.triggerSystem.processEvent({
+            type: TriggerType.DRAW_PUZZLE_SOLVED,
             payload: data.interaction
         });
     }

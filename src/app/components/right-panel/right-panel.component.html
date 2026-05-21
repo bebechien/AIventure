@@ -65,6 +65,17 @@ limitations under the License.
     </button>
     <button 
       class="tab-button" 
+      [class.active]="activeTab === 'draw'" 
+      (click)="setActiveTab('draw')"
+      title="Draw">
+      <svg class="icon svg-icon inline-svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"></path>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+      </svg>
+      <span>Draw</span>
+    </button>
+    <button 
+      class="tab-button" 
       [class.active]="activeTab === 'logs'" 
       (click)="setActiveTab('logs')"
       title="Logs">
@@ -155,6 +166,117 @@ limitations under the License.
       <div class="logs-container">
         <div *ngFor="let log of logs" class="log-entry">{{ log }}</div>
       </div>
+    </div>
+    <div *ngIf="activeTab === 'draw'" class="content-pane draw-pane">
+      <h2>Draw Puzzle</h2>
+      
+      <div *ngIf="currentDrawInteraction" class="draw-container">
+        <!-- Goal / Prompt description -->
+        <div class="draw-prompt-card">
+          <div class="prompt-header">
+            <span class="pulse-dot"></span>
+            <span class="prompt-label">AI REQUEST</span>
+          </div>
+          <div class="prompt-text">{{ currentDrawInteraction.chatResponse }}</div>
+        </div>
+
+        <!-- Drawing Canvas Area -->
+        <div class="canvas-wrapper">
+          <canvas #drawCanvas 
+            (mousedown)="startDrawing($event)"
+            (mousemove)="draw($event)"
+            (mouseup)="stopDrawing()"
+            (mouseleave)="stopDrawing()"
+            (touchstart)="startDrawingTouch($event)"
+            (touchmove)="drawTouch($event)"
+            (touchend)="stopDrawing()"
+            (touchcancel)="stopDrawing()"
+          ></canvas>
+          <div class="canvas-grid-overlay"></div>
+        </div>
+
+        <!-- Drawing Toolbar / Brush settings -->
+        <div class="draw-toolbar">
+          <!-- Color palette selection -->
+          <div class="toolbar-section">
+            <span class="section-label">Colors</span>
+            <div class="color-palette">
+              <button *ngFor="let color of neonColors" 
+                class="palette-btn" 
+                [style.background-color]="color"
+                [class.active]="brushColor === color && !isEraser"
+                (click)="selectColor(color)"
+                [title]="color"
+              ></button>
+            </div>
+          </div>
+
+          <!-- Brush sizes -->
+          <div class="toolbar-section">
+            <span class="section-label">Brush</span>
+            <div class="brush-sizes">
+              <button *ngFor="let size of brushSizes" 
+                class="size-btn"
+                [class.active]="brushSize === size"
+                (click)="brushSize = size"
+                [title]="size + 'px'"
+              >
+                <span class="dot-indicator" [style.width.px]="size" [style.height.px]="size"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Eraser & Clear actions -->
+          <div class="toolbar-actions">
+            <button class="action-icon-btn" [class.active]="isEraser" (click)="toggleEraser()" title="Toggle Eraser">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 20H7L3 16C2.1 15 2 13.5 3 12.5L12.5 3C13.5 2 15 2 16 3L21 8C22 9 22 10.5 21 11.5L12 20.5"></path>
+                <path d="M17 11L13 7"></path>
+              </svg>
+              <span>Eraser</span>
+            </button>
+            <button class="action-icon-btn clear-btn" (click)="clearCanvas()" title="Clear Canvas">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit & Status feedback panel -->
+        <div class="submit-section">
+          <button class="submit-draw-btn" 
+            [disabled]="isEvaluating" 
+            (click)="submitDrawing()"
+            [class.evaluating]="isEvaluating"
+          >
+            <span *ngIf="!isEvaluating">SUBMIT TO AI VERIFIER</span>
+            <span *ngIf="isEvaluating" class="evaluating-spinner-text">
+              <span class="spinner"></span> EVALUATING BY AI...
+            </span>
+          </button>
+
+          <!-- Evaluation outcome feedback -->
+          <div *ngIf="evaluationPassed !== null" 
+            class="feedback-card" 
+            [class.success]="evaluationPassed" 
+            [class.failure]="!evaluationPassed"
+          >
+            <div class="feedback-badge">
+              <span *ngIf="evaluationPassed" class="badge-icon">✓ PASSED</span>
+              <span *ngIf="!evaluationPassed" class="badge-icon">✗ FAILED</span>
+            </div>
+            <div class="feedback-text">{{ evaluationFeedback }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No interaction placeholder -->
+      <p class="hint" *ngIf="!currentDrawInteraction">
+        Approach the Draw Easel to start drawing!
+      </p>
     </div>
   </div>
 <div class="bottom-controls">

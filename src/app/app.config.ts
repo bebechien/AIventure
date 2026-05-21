@@ -31,7 +31,7 @@ import { MediaPipeService } from './services/mediapipe.service';
 
 export const appConfig: ApplicationConfig & { overrideStartLayoutId?: string } = {
   // overrideStartLayoutId: '00000722440872553787', // IO demo
-  overrideStartLayoutId: '00000120541412375173', // IO demo, extra trimmed
+  overrideStartLayoutId: '00000881229525047693', // IO demo, extra trimmed
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),

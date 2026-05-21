@@ -172,6 +172,8 @@ export class WorldData
       this.data.game.behaviours.forEach(b => this.globalBehaviourMap.set(b.id, b));
     }
 
+    this.injectDrawEasel();
+
     this.layoutCache.clear();
     this.layoutNameCache.clear();
 
@@ -192,6 +194,50 @@ export class WorldData
     if (flipY) this.normalizeCoordinates();
     console.log('World Data Loaded', this.data);
     this.indexObjects();
+  }
+
+  private injectDrawEasel()
+  {
+    if (!this.data) return;
+    const startLayoutId = appConfig.overrideStartLayoutId || this.data.game.config['startLayout']?.value;
+    if (!startLayoutId) return;
+
+    const startLayout = this.data.game.layouts.find(l => l.id === startLayoutId);
+    if (!startLayout) return;
+
+    // Find the actors layer
+    const actorsLayer = startLayout.layers.find(l => {
+      const nameProp = l.config && l.config['name'];
+      return nameProp && nameProp.value === 'actors';
+    });
+
+    if (actorsLayer) {
+      console.log('Injecting Draw Easel into actors layer of starting layout');
+      const easelInstance: Instance = {
+        id: 'dynamic_draw_easel',
+        type: 'instance',
+        inherit: '00000193850245546978', // Computer class
+        config: {
+          x: { type: 'integer', value: '592' },
+          y: { type: 'integer', value: '176' },
+          name: { type: 'string', value: 'Easel' }
+        },
+        behaviours: [
+          {
+            id: 'easel_draw_override',
+            type: 'behaviour',
+            inherit: '00000736888165856790', // Class Behaviour ID for InteractiveBehaviour
+            config: {
+              type: { type: 'string', value: 'draw' },
+              chatResponse: { type: 'string', value: 'Draw a happy yellow sun! ☀️' },
+              linkURL: { type: 'string', value: 'BlueDoor' }
+            }
+          }
+        ],
+        animations: []
+      };
+      actorsLayer.instances.push(easelInstance);
+    }
   }
 
   private indexObjects()

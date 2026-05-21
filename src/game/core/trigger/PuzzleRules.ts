@@ -84,6 +84,14 @@ export const PUZZLE_RULES: Rule[] = [
             { type: ActionType.OPEN_DOOR, params: { usePayload: true } }
         ]
     },
+    // Draw Puzzle Success
+    {
+        id: 'draw_puzzle_success',
+        trigger: (ctx) => ctx.type === TriggerType.DRAW_PUZZLE_SOLVED,
+        actions: [
+            { type: ActionType.OPEN_DOOR, params: { usePayload: true } }
+        ]
+    },
      // NPC Skill: Find Switch
      {
         id: 'npc_find_switch',

@@ -25,7 +25,7 @@ import { EventBus } from '../../../game/core/EventBus';
 import { CodeExecutor } from './right-panel.worker';
 import { DevsiteAPI } from '../../services/devsite-api';
 
-type Tab = 'code' | 'iframe' | 'logs';
+type Tab = 'code' | 'iframe' | 'logs' | 'draw';
 
 @Component({
   selector: 'app-right-panel',
@@ -53,6 +53,37 @@ export class RightPanelComponent implements OnInit, OnDestroy {
   isBuilding: boolean = false;
   isCreditsVisible: boolean = false;
   iframeSubTab: 'preview' | 'code' = 'preview';
+
+  // Draw Interaction
+  currentDrawInteraction: any = null;
+  @ViewChild('drawCanvas') drawCanvas!: ElementRef<HTMLCanvasElement>;
+  private ctx!: CanvasRenderingContext2D;
+  private isDrawingOnCanvas = false;
+  brushColor = '#00ffcc'; // Default neon teal
+  brushSize = 4;
+  isEraser = false;
+  isEvaluating = false;
+  evaluationPassed: boolean | null = null;
+  evaluationFeedback = '';
+  private lastInitializedInteraction: any = null;
+
+  neonColors = [
+    '#00ffcc', // neon teal
+    '#ff007f', // neon pink
+    '#ffff00', // neon yellow
+    '#7f00ff', // neon purple
+    '#00ff00', // neon green
+    '#ffffff'  // white
+  ];
+  brushSizes = [2, 4, 8, 16];
+
+  @ViewChild('drawCanvas') set canvasRef(ref: ElementRef<HTMLCanvasElement> | undefined) {
+    if (ref && ref.nativeElement) {
+      this.drawCanvas = ref;
+      // Use setTimeout to ensure Angular lifecycle has completed rendering and canvas can be queried
+      setTimeout(() => this.initCanvas(), 0);
+    }
+  }
 
   openCredits()
   {
@@ -167,6 +198,18 @@ export class RightPanelComponent implements OnInit, OnDestroy {
         }
     });
 
+    EventBus.on('visible-draw-interaction', (interaction: any) => {
+      this.currentDrawInteraction = interaction;
+      if (interaction) {
+        this.setActiveTab('draw');
+        this.evaluationPassed = null;
+        this.evaluationFeedback = '';
+      } else {
+        this.lastInitializedInteraction = null;
+      }
+      this.cdr.detectChanges();
+    });
+
     EventBus.on('build-html-request', (prompt: string) => {
         this.buildHtml(prompt);
     });
@@ -189,6 +232,7 @@ export class RightPanelComponent implements OnInit, OnDestroy {
       EventBus.off('collectibles-tracker');
       EventBus.off('collectible-collected');
       EventBus.off('visible-build-interaction');
+      EventBus.off('visible-draw-interaction');
       EventBus.off('build-html-request');
       EventBus.off('model-code-generated');
       EventBus.off('game-focused');
@@ -315,5 +359,158 @@ export class RightPanelComponent implements OnInit, OnDestroy {
 
   onEditorBlur() {
     EventBus.emit('lock-input', false);
+  }
+
+  // Draw Canvas Methods
+  initCanvas() {
+    if (!this.drawCanvas || !this.drawCanvas.nativeElement || !this.currentDrawInteraction) return;
+    const canvas = this.drawCanvas.nativeElement;
+    
+    if (this.lastInitializedInteraction === this.currentDrawInteraction) {
+      // Keep canvas drawing intact across state updates / evaluation submissions
+      this.ctx = canvas.getContext('2d')!;
+      this.ctx.lineCap = 'round';
+      this.ctx.lineJoin = 'round';
+      return;
+    }
+
+    canvas.width = 300;
+    canvas.height = 300;
+    this.ctx = canvas.getContext('2d')!;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.clearCanvas();
+    
+    this.lastInitializedInteraction = this.currentDrawInteraction;
+  }
+
+  private getCanvasCoords(event: MouseEvent | TouchEvent): { x: number; y: number } {
+    const canvas = this.drawCanvas.nativeElement;
+    const rect = canvas.getBoundingClientRect();
+    
+    let clientX = 0;
+    let clientY = 0;
+    
+    if (event instanceof MouseEvent) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else if (event instanceof TouchEvent) {
+      if (event.touches.length > 0) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      }
+    }
+    
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  startDrawing(event: MouseEvent) {
+    if (!this.currentDrawInteraction) return;
+    this.isDrawingOnCanvas = true;
+    const coords = this.getCanvasCoords(event);
+    this.ctx.beginPath();
+    this.ctx.moveTo(coords.x, coords.y);
+    this.onEditorFocus();
+  }
+
+  draw(event: MouseEvent) {
+    if (!this.isDrawingOnCanvas || !this.currentDrawInteraction) return;
+    const coords = this.getCanvasCoords(event);
+    this.ctx.strokeStyle = this.isEraser ? '#111111' : this.brushColor;
+    this.ctx.lineWidth = this.brushSize;
+    this.ctx.lineTo(coords.x, coords.y);
+    this.ctx.stroke();
+  }
+
+  stopDrawing() {
+    this.isDrawingOnCanvas = false;
+    this.onEditorBlur();
+  }
+
+  startDrawingTouch(event: TouchEvent) {
+    if (!this.currentDrawInteraction) return;
+    event.preventDefault();
+    this.isDrawingOnCanvas = true;
+    const coords = this.getCanvasCoords(event);
+    this.ctx.beginPath();
+    this.ctx.moveTo(coords.x, coords.y);
+    this.onEditorFocus();
+  }
+
+  drawTouch(event: TouchEvent) {
+    if (!this.isDrawingOnCanvas || !this.currentDrawInteraction) return;
+    event.preventDefault();
+    const coords = this.getCanvasCoords(event);
+    this.ctx.strokeStyle = this.isEraser ? '#111111' : this.brushColor;
+    this.ctx.lineWidth = this.brushSize;
+    this.ctx.lineTo(coords.x, coords.y);
+    this.ctx.stroke();
+  }
+
+  clearCanvas() {
+    if (!this.ctx) return;
+    this.ctx.fillStyle = '#111111';
+    this.ctx.fillRect(0, 0, this.drawCanvas.nativeElement.width, this.drawCanvas.nativeElement.height);
+  }
+
+  selectColor(color: string) {
+    this.brushColor = color;
+    this.isEraser = false;
+  }
+
+  toggleEraser() {
+    this.isEraser = !this.isEraser;
+  }
+
+  async submitDrawing() {
+    if (!this.currentDrawInteraction || this.isEvaluating) return;
+
+    const canvas = this.drawCanvas.nativeElement;
+    const imageBase64 = canvas.toDataURL('image/png');
+
+    this.isEvaluating = true;
+    this.evaluationPassed = null;
+    this.evaluationFeedback = '';
+    this.cdr.detectChanges();
+
+    const prompt = this.currentDrawInteraction.chatResponse;
+    const resultLog = this.logService.createStreamableLog({
+      summary: `Evaluating drawing: "${prompt}"`,
+      type: 'log',
+      detail: `Player drawing submitted for prompt: "${prompt}".\nStarting multimodal AI evaluation...`,
+      inspect: '',
+      sequence: ['angular', 'local-gemma']
+    });
+
+    try {
+      if (this.modelService.evaluateDrawing) {
+        const response = await this.modelService.evaluateDrawing(prompt, imageBase64);
+        this.evaluationPassed = response.success;
+        this.evaluationFeedback = response.feedback;
+
+        resultLog.append(`\nAI Evaluation complete.\nResult: ${response.success ? 'PASSED' : 'FAILED'}\nFeedback: ${response.feedback}`);
+        resultLog.finish();
+
+        if (response.success) {
+          EventBus.emit('draw-puzzle-solved', {
+            interaction: this.currentDrawInteraction
+          });
+        }
+      } else {
+        throw new Error('Drawing evaluation is not supported by current model backend.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      this.evaluationPassed = false;
+      this.evaluationFeedback = 'Error reaching AI evaluator. Please try again!';
+      resultLog.append(`\nEvaluation Error: ${e.message || e}`);
+      resultLog.finish();
+    } finally {
+      this.isEvaluating = false;
+      this.cdr.detectChanges();
+    }
   }
 }

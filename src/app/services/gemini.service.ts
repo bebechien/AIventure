@@ -286,4 +286,72 @@ export class GeminiService implements ModelBackend, OnDestroy {
         yield "<html><body><h1>Error generating HTML</h1></body></html>";
     }
   }
+
+  async evaluateDrawing(prompt: string, imageBase64: string): Promise<{ success: boolean; feedback: string }> {
+    if (this.ai['apiKey'] === 'GEMINI_API_KEY' || !this.ai['apiKey']) {
+      return this.fallbackEvaluateDrawing(prompt);
+    }
+
+    try {
+      let cleanBase64 = imageBase64;
+      if (imageBase64.includes(',')) {
+        cleanBase64 = imageBase64.split(',')[1];
+      }
+
+      const systemInstruction = `You are a creative, encouraging game master.
+The player was asked to draw: "${prompt}".
+Look at their canvas drawing and evaluate whether they did a reasonable attempt at drawing it.
+Be friendly and lenient — drawings are made with a mouse/trackpad!
+Analyze the image and return a JSON object with:
+- "success": a boolean (true if the drawing matches the prompt/request reasonably, false otherwise)
+- "feedback": a short, encouraging message explaining your decision (max 100 characters).`;
+
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-flash-lite-latest',
+        contents: [
+          systemInstruction,
+          {
+            inlineData: {
+              mimeType: 'image/png',
+              data: cleanBase64
+            }
+          }
+        ],
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              success: { type: 'BOOLEAN' },
+              feedback: { type: 'STRING' }
+            },
+            required: ['success', 'feedback']
+          }
+        }
+      });
+
+      const responseText = response.text;
+      if (responseText) {
+        const parsed = JSON.parse(responseText.trim());
+        return {
+          success: !!parsed.success,
+          feedback: parsed.feedback || (parsed.success ? "Wonderful drawing!" : "Hmm, please try again.")
+        };
+      }
+      return { success: false, feedback: "No response received from AI." };
+
+    } catch (e) {
+      console.error("Error evaluating drawing:", e);
+      return { success: false, feedback: "Failed to reach evaluation AI. Please try again." };
+    }
+  }
+
+  private async fallbackEvaluateDrawing(prompt: string): Promise<{ success: boolean; feedback: string }> {
+    // Simulate a realistic thinking delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return {
+      success: true,
+      feedback: `[MOCK SUCCESS] Beautiful! Your drawing matches the request: "${prompt}".`
+    };
+  }
 }

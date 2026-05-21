@@ -375,4 +375,80 @@ export class LmStudioService implements ModelBackend, OnDestroy {
         yield "<html><body><h1>Error generating HTML</h1></body></html>";
     }
   }
+
+  async evaluateDrawing(prompt: string, imageBase64: string): Promise<{ success: boolean; feedback: string }> {
+    // Standard system instruction asking for JSON format
+    const systemInstruction = `You are a creative, encouraging game master.
+The player was asked to draw: "${prompt}".
+Look at their canvas drawing and evaluate whether they did a reasonable attempt at drawing it.
+Be friendly and lenient — drawings are made with a mouse/trackpad!
+Analyze the image and return a JSON object with:
+- "success": a boolean (true if the drawing matches the prompt/request reasonably, false otherwise)
+- "feedback": a short, encouraging message explaining your decision (max 100 characters).`;
+
+    let dataUrl = imageBase64;
+    if (!imageBase64.startsWith('data:')) {
+      dataUrl = `data:image/png;base64,${imageBase64}`;
+    }
+
+    try {
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemInstruction },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Please evaluate this drawing for: "${prompt}".`
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: dataUrl }
+                }
+              ]
+            }
+          ],
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`LM Studio HTTP error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (content) {
+        let jsonText = content.trim();
+        if (jsonText.startsWith('```')) {
+          jsonText = jsonText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+        }
+        
+        const parsed = JSON.parse(jsonText);
+        return {
+          success: !!parsed.success,
+          feedback: parsed.feedback || (parsed.success ? "Wonderful drawing!" : "Hmm, please try again.")
+        };
+      }
+      
+      return { success: false, feedback: "No response received from local AI." };
+
+    } catch (e: any) {
+      console.warn("LM Studio drawing evaluation failed, falling back to mock evaluation:", e);
+      return this.fallbackEvaluateDrawing(prompt);
+    }
+  }
+
+  private async fallbackEvaluateDrawing(prompt: string): Promise<{ success: boolean; feedback: string }> {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return {
+      success: true,
+      feedback: `[LM Studio Fallback] Beautiful! Your drawing matches the request: "${prompt}".`
+    };
+  }
 }

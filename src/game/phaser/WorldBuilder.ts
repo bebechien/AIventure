@@ -331,6 +331,7 @@ export class WorldBuilder {
         case InteractionType.MODEL:
         case InteractionType.CODE:
         case InteractionType.BUILD:
+        case InteractionType.DRAW:
             gridManager.setModelToolMap(gx, gy, b);
             return;
             
