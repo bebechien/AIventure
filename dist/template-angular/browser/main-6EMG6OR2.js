@@ -1,0 +1,1 @@
+import{H as r,I as m,K as i,M as a,f as p,m as n}from"./chunk-Y6UJPOAC.js";var e=class o{static{this.\u0275fac=function(t){return new(t||o)}}static{this.\u0275cmp=p({type:o,selectors:[["app-root"]],decls:1,vars:0,template:function(t,s){t&1&&n(0,"router-outlet")},dependencies:[r,i],encapsulation:2})}};m(e,a).catch(o=>console.error(o));

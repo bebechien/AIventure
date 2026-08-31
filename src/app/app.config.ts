@@ -38,10 +38,10 @@ export const appConfig: ApplicationConfig & { overrideStartLayoutId?: string } =
     provideHttpClient(),
     // { provide: MODEL_BACKEND, useClass: GeminiService }, // Default, no need to specify if providedIn: 'root' works, but good to have explicit
     // { provide: MODEL_BACKEND, useClass: OllamaService }, // Uncomment to use Ollama
-    { provide: MODEL_BACKEND, useClass: LmStudioService }, // Uncomment to use LM Studio
+    //{ provide: MODEL_BACKEND, useClass: LmStudioService }, // Uncomment to use LM Studio
     // { provide: MODEL_BACKEND, useClass: TransformersService }, // Uncomment to use transformers.js
     // { provide: MODEL_BACKEND, useClass: ChromePromptService }, // Uncomment to use Chrome Prompt API
-    //{ provide: MODEL_BACKEND, useClass: MediaPipeService } // Uncomment to use MediaPipe LLM Inference API
+    { provide: MODEL_BACKEND, useClass: MediaPipeService } // Uncomment to use MediaPipe LLM Inference API
   ]
 };
 
