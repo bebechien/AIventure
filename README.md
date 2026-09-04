@@ -129,6 +129,10 @@ All other sprites are the property of Google LLC.
 
 Full license details of the sprite pack: https://www.oryxdesignlab.com/license
 
-## Additional Information
+## Disclaimer
+
+This is not an officially supported Google product. This project is not
+eligible for the [Google Open Source Software Vulnerability Rewards
+Program](https://bughunters.google.com/open-source-security).
 
 This app is not an officially supported Google Product.
