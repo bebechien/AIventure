@@ -1,5 +1,7 @@
 # AIventure
 
+![demo](aiventure.gif)
+
 A 2D grid-based adventure game built with [Phaser 3](https://phaser.io/) and [Angular](https://angular.io/).
 
 ## Overview
