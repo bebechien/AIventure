@@ -43,7 +43,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
-package-lock.json
 
 # Environment
 src/environments/environment.ts

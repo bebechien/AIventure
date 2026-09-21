@@ -41,7 +41,8 @@ export class MediaPipeService implements ModelBackend, OnDestroy {
   
   private initializationPromise: Promise<void> | null = null;
   private localModelUrl = '/assets/models/gemma-4-E4B-it-web.task';
-  private remoteModelUrl = 'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it-web.task';
+  // Pinned to immutable commit SHA on Hugging Face instead of mutable 'main' branch
+  private remoteModelUrl = 'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/2eee7ac325f20eb8c9ac1d0e972f7c84663062da/gemma-4-E4B-it-web.task';
 
   //[END solution_code]
 
@@ -220,9 +221,10 @@ export class MediaPipeService implements ModelBackend, OnDestroy {
       this.loadingProgress$.next(10);
 
       try {
-        // Dynamic ESM imports from CDNs to support strict MIME checking and avoid compiler warnings
+        // Dynamic ESM imports from CDNs pinned to exact versions to prevent supply-chain drift
+        // Note: Update these pinned versions (1.0.4 and 0.10.26) deliberately after auditing new releases.
         // @ts-ignore
-        const cacheModule = await import('https://cdn.jsdelivr.net/gh/jasonmayes/web-ai-model-proxy-cache@latest/FileProxyCache.min.js');
+        const cacheModule = await import('https://cdn.jsdelivr.net/gh/jasonmayes/web-ai-model-proxy-cache@1.0.4/FileProxyCache.min.js');
         const FileProxyCache = cacheModule.default;
 
         // @ts-ignore
@@ -267,7 +269,7 @@ export class MediaPipeService implements ModelBackend, OnDestroy {
         this.loadingProgress$.next(85);
 
         const genai = await FilesetResolver.forGenAiTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@latest/wasm"
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.26/wasm"
         );
 
         this.loadingStatus$.next('Creating LlmInference session on GPU...');

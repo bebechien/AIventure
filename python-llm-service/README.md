@@ -15,10 +15,11 @@ This is a simple FastAPI-based LLM provider that uses the Hugging Face `transfor
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies (with SHA-256 hash verification):**
    ```bash
-   pip install -r requirements.txt
+   pip install --require-hashes -r requirements.txt
    ```
+   *(To update dependencies, edit `requirements.in` and run `uv pip compile --generate-hashes --universal requirements.in -o requirements.txt`.)*
 
 3. **Run the service:**
    ```bash

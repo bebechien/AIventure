@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+transformers
+torch
+accelerate
+pydantic
+sse-starlette
+google-cloud-aiplatform

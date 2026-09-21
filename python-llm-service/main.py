@@ -44,9 +44,11 @@ app.add_middleware(
 )
 
 DEFAULT_MODEL_ID = "google/gemma-4-E4B-it"
+DEFAULT_MODEL_REVISION = "main"  # Override via MODEL_REVISION env var with an immutable commit SHA in production
 
 # Model configuration
 MODEL_ID = os.environ.get("MODEL_ID", DEFAULT_MODEL_ID)
+MODEL_REVISION = os.environ.get("MODEL_REVISION", DEFAULT_MODEL_REVISION)
 
 # Vertex AI configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
@@ -58,14 +60,15 @@ print(USE_VERTEX)
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-print(f"Loading processor for: {MODEL_ID}...")
-processor = AutoProcessor.from_pretrained(MODEL_ID)
+print(f"Loading processor for: {MODEL_ID} (revision: {MODEL_REVISION})...")
+processor = AutoProcessor.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
 
 model = None
 if not USE_VERTEX:
-    print(f"Loading model: {MODEL_ID} on {DEVICE}...")
+    print(f"Loading model: {MODEL_ID} (revision: {MODEL_REVISION}) on {DEVICE}...")
     model = AutoModelForImageTextToText.from_pretrained(
         MODEL_ID,
+        revision=MODEL_REVISION,
         dtype="auto",
     ).to(DEVICE)
     print("Model loaded.")
